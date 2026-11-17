@@ -1,5 +1,8 @@
-import { useMemo } from "react";
-import { CRITICAL_T, TRIPLE_T, referencePoints, saturationPressurePa, sublimationPressurePa } from "../model/water";
+import {
+  referencePoints,
+  saturationPressurePa,
+  sublimationPressurePa,
+} from "../model/water";
 
 type Props = { tempC: number; pressurePa: number; onSelect: (t: number, p: number) => void };
 const Tmin = -100, Tmax = 450, pMin = 100, pMax = 100e6;

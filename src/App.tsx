@@ -18,7 +18,7 @@ export default function App() {
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [tab, setTab] = useState<"experiment" | "wissen">("experiment");
-  const [history, setHistory] = useState<{t:number;p:number}[]>([{t:20,p:ATM}]);
+  const [, setHistory] = useState<{t:number;p:number}[]>([{t:20,p:ATM}]);
   const lastTick = useRef(0);
   const state = useMemo(() => classifyState(temp, pressure), [temp, pressure]);
 
