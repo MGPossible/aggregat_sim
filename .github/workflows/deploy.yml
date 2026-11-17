@@ -31,6 +31,9 @@ jobs:
       - name: Abhängigkeiten installieren
         run: npm install
 
+      - name: Prüfen, ob TypeScript installiert ist
+        run: npx tsc --version
+
       - name: TypeScript prüfen
         run: npm run typecheck
 
