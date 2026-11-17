@@ -1,0 +1,79 @@
+name: Deploy Wasser-Phasenlabor
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Kein lokales npm und kein eingecheckter Lockfile erforderlich:
+      # GitHub Actions installiert die exakt festgelegten direkten Versionen
+      # und erzeugt den npm-Lockfile nur im CI-Arbeitsverzeichnis.
+      - name: Abhängigkeiten installieren
+        run: npm install --no-audit --no-fund
+
+      # Produktionsabhängigkeiten bleiben eine harte Sicherheits-Schranke.
+      # Vite/Vitest/picomatch sind Entwicklungswerkzeuge und werden nicht
+      # in das statische dist-Verzeichnis ausgeliefert.
+      - name: Sicherheitsprüfung der Produktionsabhängigkeiten
+        run: npm audit --omit=dev --audit-level=high
+
+      # Die vollständige Prüfung bleibt sichtbar. Der aktuell gemeldete
+      # picomatch-Advisory hat noch keine veröffentlichte gepatchte npm-Version;
+      # deshalb darf diese Dev-Toolchain-Warnung das Pages-Deployment nicht blockieren.
+      - name: Vollständiger Dependency-Audit (nicht blockierend)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: TypeScript prüfen
+        run: npm run typecheck
+
+      - name: Unit-Tests ausführen
+        run: npm test
+
+      - name: Projekt bauen
+        run: npm run build
+        env:
+          VITE_BASE: /aggregat_sim/
+
+      - name: GitHub Pages konfigurieren
+        uses: actions/configure-pages@v5
+
+      - name: Build-Artefakt hochladen
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Auf GitHub Pages veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4
