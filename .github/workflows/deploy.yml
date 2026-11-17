@@ -28,23 +28,25 @@ jobs:
         with:
           node-version: 22
 
+      # Kein lokales npm und kein eingecheckter Lockfile erforderlich:
+      # GitHub Actions installiert die exakt festgelegten direkten Versionen
+      # und erzeugt den npm-Lockfile nur im CI-Arbeitsverzeichnis.
       - name: Abhängigkeiten installieren
-        run: npm install
+        run: npm install --no-audit --no-fund
 
-      - name: Prüfen, ob TypeScript installiert ist
-        run: npx tsc --version
+      - name: Sicherheitsprüfung der Abhängigkeiten
+        run: npm audit --audit-level=high
 
       - name: TypeScript prüfen
         run: npm run typecheck
 
-      - name: Tests ausführen
+      - name: Unit-Tests ausführen
         run: npm test
-
-      - name: GitHub-Pages-Basis setzen
-        run: echo "VITE_BASE=/aggregat_sim/" >> $GITHUB_ENV
 
       - name: Projekt bauen
         run: npm run build
+        env:
+          VITE_BASE: /aggregat_sim/
 
       - name: GitHub Pages konfigurieren
         uses: actions/configure-pages@v5
@@ -58,7 +60,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     runs-on: ubuntu-latest
     needs: build
 

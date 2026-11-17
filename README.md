@@ -4,28 +4,28 @@ Ein interaktives, deutschsprachiges Lernexperiment zu den Aggregatzuständen von
 
 ## Funktionen
 
-- Interaktives Druck-Temperatur-Phasendiagramm (logarithmische Druckachse)
+- Interaktives Druck-Temperatur-Phasendiagramm mit logarithmischer Druckachse
 - Temperatur- und Druckregler mit numerischer Eingabe
-- Direkte Auswahl von Zuständen im Diagramm
+- Zustandsauswahl durch Tippen, Klicken und Tastatur im Diagramm
 - Erwärmung starten/pausieren, vier Geschwindigkeiten und Reset
 - Szenarien für Eisfach, Raumtemperatur, Sieden, Hochgebirge, Tripel- und kritischen Punkt
 - Messwertanzeige, Erklärbereich und transparente Modellgrenzen
-- Responsive Oberfläche, Tastaturfokus, Touch-/Pointerbedienung und reduzierte Bewegung
+- Responsive Oberfläche, Touch-/Pointerbedienung, Tastaturfokus und reduzierte Bewegung
 
 ## Technologien
 
-React 19, TypeScript 5, Vite 6, SVG und CSS. Keine Laufzeit-API, kein Backend, keine Datenbank und kein Tracking.
+React 19, TypeScript 5, Vite 8, Vitest 5, SVG und CSS. Kein Backend, keine Datenbank, keine externen Laufzeit-CDNs und kein Tracking.
 
-## Lokal entwickeln
+## Entwicklung und Prüfung
 
-Voraussetzung: Node.js 22 LTS und npm.
+Für die lokale Entwicklung werden Node.js 22 und npm benötigt:
 
 ```bash
-npm ci
+npm install
 npm run dev
 ```
 
-## Prüfen und bauen
+Prüfungen:
 
 ```bash
 npm run typecheck
@@ -34,28 +34,29 @@ npm run build
 npm run preview
 ```
 
+Die direkte Installation auf deinem eigenen Rechner ist für das GitHub-Pages-Deployment nicht erforderlich. Der GitHub-Actions-Workflow installiert die Abhängigkeiten in der CI-Umgebung. Es wird bewusst kein npm-Cache verwendet, da das Projekt ohne eingecheckten `package-lock.json` auskommt. Die direkten Paketversionen sind exakt in `package.json` festgelegt; für vollständig reproduzierbare transitive Abhängigkeiten sollte später ein `package-lock.json` aus einem vertrauenswürdigen npm-Lauf eingecheckt werden.
+
 ## GitHub Pages
 
-Der Workflow `.github/workflows/deploy.yml` baut bei Push auf `main` und manuell über `workflow_dispatch`. Er führt TypeScript-Prüfung und Unit-Tests aus und veröffentlicht `dist` mit den offiziellen Pages-Actions.
+Der Workflow `.github/workflows/deploy.yml` baut bei Push auf `main` und kann über `workflow_dispatch` manuell gestartet werden. Er führt `npm audit`, TypeScript-Prüfung, Unit-Tests und Build aus und veröffentlicht anschließend `dist`.
 
-1. Repository auf GitHub anlegen und den Projektinhalt pushen.
-2. Unter **Settings → Pages → Build and deployment** die Quelle **GitHub Actions** auswählen.
-3. Standardbranch im Workflow ggf. anpassen, falls er nicht `main` heißt.
-4. Für eine Projektseite `https://BENUTZER.github.io/REPOSITORY/` die Repository-Variable `VITE_BASE` auf `/REPOSITORY/` setzen.
-5. Für Benutzer-/Organisationsseiten oder eigene Domain `VITE_BASE` auf `/` setzen (Standard).
-6. Unter **Actions** den Workflow ausführen und die veröffentlichte URL im Deployment-Job öffnen.
+1. Projektdateien in das Repository `MGPossible/aggregat_sim` hochladen.
+2. Unter **Settings → Pages → Build and deployment** als Quelle **GitHub Actions** auswählen.
+3. Auf den Branch `main` committen oder den Workflow im Tab **Actions** manuell starten.
+4. Die veröffentlichte URL im erfolgreichen Deployment-Job öffnen.
 
-Die Vite-Basis wird zur Buildzeit über `VITE_BASE` gesetzt. Der Workflow erzeugt derzeit den Lockfile im CI-Lauf, weil in dieser Umgebung kein vollständiger npm-Lockfile aus dem Registry-Netzwerk bezogen werden konnte; committe für streng reproduzierbare Builds einen lokal mit `npm install` erzeugten `package-lock.json`. Der Workflow verwendet derzeit versionierte Major-Tags der offiziellen Actions (`actions/checkout@v4`, `setup-node@v4`, `configure-pages@v5`, `upload-pages-artifact@v3`, `deploy-pages@v4`). Für eine strengere Supply-Chain-Policy können diese Tags im Repository auf geprüfte Commit-SHAs festgeschrieben werden.
+Für dieses Repository wird beim Build `VITE_BASE=/aggregat_sim/` verwendet. Für ein anderes Repository muss dieser Wert im Workflow angepasst werden.
 
 ## Projektstruktur
 
 ```text
 src/
-  components/PhaseDiagram.tsx   SVG-Phasendiagramm und Pointer-Auswahl
+  components/PhaseDiagram.tsx   SVG-Phasendiagramm und Pointer-/Tastaturauswahl
   model/water.ts                Physikalische Modellfunktionen
   model/water.test.ts           Referenz- und Plausibilitätstests
-  App.tsx                       Oberfläche, Steuerung und Zustandsverwaltung
-  styles.css                    Responsive Design und Accessibility
+  App.tsx                       Oberfläche und Zustandsverwaltung
+  main.tsx                      React-Einstiegspunkt
+  styles.css                    Responsive Gestaltung und Accessibility
 .github/workflows/deploy.yml    GitHub-Pages-Deployment
 ```
 
@@ -63,31 +64,33 @@ src/
 
 ### Referenzwerte
 
-- Tripelpunkt: `Tₜ = 273,16 K` und `pₜ = 611,657 Pa`
-- Kritischer Punkt: `T꜀ = 647,096 K` und `p꜀ = 22,064 MPa`
-- Normaler Siedepunkt: ungefähr `99,97 °C` bei `101,325 kPa`
+- Tripelpunkt: `Tₜ = 273,16 K`, `pₜ = 611,657 Pa`
+- Kritischer Punkt: `T꜀ = 647,096 K`, `p꜀ = 22,064 MPa`
+- Normaler Siedepunkt: ungefähr `99,974 °C` bei `101,325 kPa`
+
+**Hinweis zum CI-Test:** Bei exakt `100,000 °C` ergibt die IAPWS-Korrelation ungefähr `101,418 kPa`. Das ist kein Modellfehler: 100 °C liegt geringfügig oberhalb des normalen Siedepunkts von Wasser. Der Test vergleicht deshalb den berechneten Druck am normalen Siedepunkt (~99,974 °C) mit 1 atm und prüft separat den höheren Druck bei 100 °C.
 
 ### Verwendete Gleichungen
 
-**Flüssig-Dampf-Grenze:** IAPWS-95/Wagner-Sättigungsdruckkorrelation. Mit `θ = 1 − T/Tc`:
+**Flüssig–Dampf-Grenze:** IAPWS-95/Wagner-Sättigungsdruckkorrelation. Mit `θ = 1 − T/Tc`:
 
 ```text
 ln(psat/pc) = (Tc/T) · Σ ai · θ^bi
 ```
 
-Koeffizienten `(ai)` und Exponenten `(bi)` sind im Quellcode in `src/model/water.ts` hinterlegt.
+Die Koeffizienten und Exponenten sind in `src/model/water.ts` hinterlegt.
 
-**Eis-Dampf-Grenze:** Clausius-Clapeyron-Näherung mit konstanter Sublimationsenthalpie, am Tripelpunkt verankert:
+**Eis–Dampf-Grenze:** Clausius–Clapeyron-Näherung mit konstanter Sublimationsenthalpie, am Tripelpunkt verankert:
 
 ```text
 ln(p/pt) ≈ − Δhsub/R · (1/T − 1/Tt)
 ```
 
-**Eis-Ih-Schmelzgrenze:** lokale lineare Näherung nahe dem Tripelpunkt mit negativer Steigung (ungefähr −0,0074 K/MPa). Diese Näherung illustriert die ungewöhnliche Druckabhängigkeit des Schmelzens von gewöhnlichem Eis.
+**Eis-Ih-Schmelzgrenze:** lokale lineare Näherung mit negativer Steigung von ungefähr `−0,0074 K/MPa`. Sie wird im Modell nur bis 10 MPa angewendet.
 
-### Grenzen und Annahmen
+### Modellgrenzen
 
-Dies ist ein didaktisches Phasenkarten-Modell und keine vollständige Wasser-Zustandsgleichung. Die Verdampfungskurve basiert auf einer anerkannten IAPWS-Korrelation. Die Sublimationskurve ist wegen konstanter angenäherter Sublimationsenthalpie nur eine Näherung. Die Schmelzlinie ist lokal linearisiert. Hochdruck-Eismodifikationen, metastabile Zustände, detaillierte Dichte-/Enthalpieeigenschaften und kritische Skalierung werden nicht simuliert. Das Modell sollte daher nicht für technische Auslegung oder präzise Stoffdaten verwendet werden.
+Dies ist ein didaktisches Phasenkarten-Modell und keine vollständige Wasser-Zustandsgleichung. Die Verdampfungskurve verwendet die IAPWS-Korrelation. Die Sublimationskurve ist wegen konstanter angenäherter Sublimationsenthalpie eine Näherung. Die Schmelzlinie ist lokal linearisiert. Hochdruck-Eismodifikationen, metastabile Zustände, detaillierte Dichte-/Enthalpieeigenschaften und die kritische Skalierung werden nicht simuliert. Das Modell ist nicht für technische Auslegung oder präzise Stoffdatenauswertung vorgesehen.
 
 Die Erwärmungsanimation verändert den Temperaturparameter; sie löst keine dynamische Wärmeübertragungs- oder kinetische Phasenwechselrechnung.
 
@@ -100,4 +103,4 @@ Die Erwärmungsanimation verändert den Temperaturparameter; sie löst keine dyn
 
 ## Datenschutz
 
-Keine Konten, Cookies, Tracking- oder Analyse-Skripte. Es werden ausschließlich lokale Systemschriften verwendet; es gibt keine externen Laufzeitressourcen.
+Keine Konten, Cookies, Tracking- oder Analyse-Skripte. Die Anwendung verwendet Systemschriften und benötigt keine externen Laufzeitressourcen.
