@@ -22,11 +22,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - name: Generate dependency lock
         run: npm install --package-lock-only
       - name: Install dependencies from generated lock
-        run: npm ci
+        run: npm install
       - name: Typecheck and test
         run: |
           npm run typecheck
